@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>پنل مدیریت | Hirad Code</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="admin">
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html">
+          <span class="brand__mark"></span>
+          <span>Hirad Code</span>
+        </a>
+        <nav class="nav">
+          <a href="./index.html">صفحه اصلی</a>
+          <a class="nav__pill" href="./admin.html">پنل مدیریت</a>
+        </nav>
+      </header>
+
+      <main class="admin-layout">
+        <section class="admin-panel">
+          <div class="section__heading">
+            <p class="eyebrow">پنل مدیریت نمونه‌کارها</p>
+            <h2>پروژه جدیدی اضافه کنید</h2>
+          </div>
+
+          <form id="projectForm" class="admin-form">
+            <label>
+              عنوان پروژه
+              <input name="title" placeholder="مثلاً Nova Studio" required />
+            </label>
+            <label>
+              دسته‌بندی
+              <input name="category" placeholder="UI/UX • Branding" required />
+            </label>
+            <label>
+              توضیح کوتاه
+              <textarea name="description" rows="3" placeholder="توضیح پروژه را وارد کنید" required></textarea>
+            </label>
+            <label>
+              آدرس تصویر
+              <input name="image" placeholder="https://..." />
+            </label>
+            <label>
+              لینک پروژه
+              <input name="link" placeholder="https://..." />
+            </label>
+            <label>
+              تگ‌ها
+              <input name="tags" placeholder="React, UI, Branding" />
+            </label>
+            <button class="btn btn--primary" type="submit">افزودن پروژه</button>
+          </form>
+        </section>
+
+        <aside class="admin-list">
+          <div class="section__heading">
+            <p class="eyebrow">پروژه‌های موجود</p>
+            <h2>مدیریت سریع</h2>
+          </div>
+          <div id="projectsList" class="projects-list"></div>
+        </aside>
+      </main>
+    </div>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
