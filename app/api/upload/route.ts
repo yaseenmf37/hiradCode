@@ -6,12 +6,13 @@ import { isLoggedIn } from "@/lib/auth";
 /**
  * Server-side upload to Vercel Blob.
  *
- * The newer Blob store connects via BLOB_STORE_ID + Vercel's automatic OIDC
- * token rather than a static BLOB_READ_WRITE_TOKEN, so `put()` authenticates
- * itself on Vercel with no secret to manage. The file passes through this
- * function, which caps it at 4 MB to stay under the serverless body limit —
- * ample for portfolio imagery. For anything larger, the panel still accepts a
- * pasted image URL.
+ * `put()` reads BLOB_READ_WRITE_TOKEN from the environment (set when a public
+ * Blob store is connected) — or, if only BLOB_STORE_ID is present, authenticates
+ * via Vercel's automatic OIDC token. Either way there is no secret to pass by
+ * hand. The store must be PUBLIC, since portfolio images are loaded directly by
+ * visitors' browsers. The file passes through this function, capped at 4 MB to
+ * stay under the serverless body limit — ample for portfolio imagery; anything
+ * larger can still go in as a pasted image URL.
  */
 
 const MAX_BYTES = 4 * 1024 * 1024;
