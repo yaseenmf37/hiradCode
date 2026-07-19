@@ -1,57 +1,78 @@
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
 
 import { isLoggedIn } from "@/lib/auth";
 
 /**
- * Issues short-lived client-upload tokens for Vercel Blob. The browser uploads
- * straight to Blob storage, so files never pass through the serverless function
- * and the 4.5 MB request-body ceiling doesn't apply.
+ * Server-side upload to Vercel Blob.
+ *
+ * The newer Blob store connects via BLOB_STORE_ID + Vercel's automatic OIDC
+ * token rather than a static BLOB_READ_WRITE_TOKEN, so `put()` authenticates
+ * itself on Vercel with no secret to manage. The file passes through this
+ * function, which caps it at 4 MB to stay under the serverless body limit —
+ * ample for portfolio imagery. For anything larger, the panel still accepts a
+ * pasted image URL.
  */
+
+const MAX_BYTES = 4 * 1024 * 1024;
+
+const ALLOWED = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+  "image/gif",
+]);
+
+const canUpload = () =>
+  Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN);
+
 export async function POST(request: Request): Promise<NextResponse> {
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!(await isLoggedIn())) {
+    return NextResponse.json({ error: "برای آپلود باید وارد شوید." }, { status: 401 });
+  }
+
+  if (!canUpload()) {
     return NextResponse.json(
       {
         error:
-          "آپلود فایل پیکربندی نشده است. در داشبورد Vercel یک Blob Store بسازید یا به‌جای آپلود، آدرس تصویر را وارد کنید.",
+          "آپلود فایل روی این محیط فعال نیست. به‌جای آن می‌توانید آدرس تصویر را وارد کنید.",
       },
       { status: 501 },
     );
   }
 
-  const body = (await request.json()) as HandleUploadBody;
+  const form = await request.formData();
+  const file = form.get("file");
+
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: "فایلی دریافت نشد." }, { status: 400 });
+  }
+
+  if (!ALLOWED.has(file.type)) {
+    return NextResponse.json(
+      { error: "فقط تصویر مجاز است (JPG، PNG، WebP، AVIF، GIF)." },
+      { status: 415 },
+    );
+  }
+
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json(
+      { error: "حجم فایل باید کمتر از ۴ مگابایت باشد." },
+      { status: 413 },
+    );
+  }
 
   try {
-    const result = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async () => {
-        // The token is what authorises the upload — check the session here,
-        // not after the fact.
-        if (!(await isLoggedIn())) {
-          throw new Error("برای آپلود باید وارد شوید.");
-        }
-
-        return {
-          allowedContentTypes: [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/avif",
-            "image/gif",
-          ],
-          addRandomSuffix: true,
-          maximumSizeInBytes: 8 * 1024 * 1024,
-        };
-      },
-      onUploadCompleted: async () => {
-        // Required by the contract; nothing to reconcile since the URL is
-        // written into the project row by the form submit.
-      },
+    const blob = await put(file.name, file, {
+      access: "public",
+      addRandomSuffix: true,
+      contentType: file.type,
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({ url: blob.url });
   } catch (error) {
+    console.error("blob upload failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "آپلود ناموفق بود." },
       { status: 400 },

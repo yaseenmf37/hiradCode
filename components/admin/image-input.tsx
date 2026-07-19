@@ -1,6 +1,5 @@
 "use client";
 
-import { upload } from "@vercel/blob/client";
 import Image from "next/image";
 import { useRef, useState } from "react";
 
@@ -9,12 +8,21 @@ import { cn } from "@/lib/utils";
 
 type UploadState = { busy: boolean; error?: string };
 
+/** Posts the file to our route, which stores it in Blob and returns the URL. */
 async function uploadFile(file: File): Promise<string> {
-  const blob = await upload(file.name, file, {
-    access: "public",
-    handleUploadUrl: "/api/upload",
-  });
-  return blob.url;
+  const body = new FormData();
+  body.append("file", file);
+
+  const res = await fetch("/api/upload", { method: "POST", body });
+  const data = (await res.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+  };
+
+  if (!res.ok || !data.url) {
+    throw new Error(data.error || "آپلود ناموفق بود.");
+  }
+  return data.url;
 }
 
 /** Cover image: paste a URL, pick a file, or drop one on the box. */
@@ -107,7 +115,7 @@ export function ImageInput({
                   تصویر را بکشید یا کلیک کنید
                 </span>
                 <span className="text-fog-600 text-[10px]">
-                  JPG، PNG، WebP — حداکثر ۸ مگابایت
+                  JPG، PNG، WebP — حداکثر ۴ مگابایت
                 </span>
               </>
             )}
