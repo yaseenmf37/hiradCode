@@ -35,8 +35,8 @@ export function Logo({ className }: { className?: string }) {
           />
           <defs>
             <linearGradient id="logo-bg" x1="0" y1="0" x2="32" y2="32">
-              <stop stopColor="#a020f0" />
-              <stop offset="1" stopColor="#6d28d9" />
+              <stop stopColor="#b026ff" />
+              <stop offset="1" stopColor="#6a12c2" />
             </linearGradient>
           </defs>
         </svg>
