@@ -83,13 +83,13 @@ export function Aurora() {
       className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[100lvh] overflow-hidden"
     >
       {/* Colour fields */}
-      <div className="bg-neon-pink/20 animate-aurora absolute -top-52 right-[-12%] h-[38rem] w-[38rem] rounded-full blur-[140px]" />
-      <div className="bg-neon-violet/20 animate-aurora absolute top-[18%] left-[-18%] h-[34rem] w-[34rem] rounded-full blur-[140px] [animation-delay:-6s]" />
-      <div className="bg-neon-indigo/15 animate-aurora absolute right-[15%] bottom-[-25%] h-[32rem] w-[32rem] rounded-full blur-[140px] [animation-delay:-12s]" />
+      <div className="bg-neon-pink/14 animate-aurora absolute -top-52 right-[-12%] h-[38rem] w-[38rem] rounded-full blur-[150px]" />
+      <div className="bg-neon-violet/12 animate-aurora absolute top-[18%] left-[-18%] h-[34rem] w-[34rem] rounded-full blur-[150px] [animation-delay:-6s]" />
+      <div className="bg-neon-indigo/10 animate-aurora absolute right-[15%] bottom-[-25%] h-[32rem] w-[32rem] rounded-full blur-[150px] [animation-delay:-12s]" />
 
       {/* Hairline grid, faded out toward the edges */}
       <div
-        className="absolute inset-0 opacity-[0.045]"
+        className="absolute inset-0 opacity-[0.028]"
         style={{
           backgroundImage:
             "linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)",
@@ -121,7 +121,7 @@ export function Aurora() {
       {BEAMS.map((beam, i) => (
         <span
           key={`beam-${i}`}
-          className="animate-beam via-neon-pink/25 absolute top-0 hidden h-[45vh] w-px bg-gradient-to-b from-transparent to-transparent sm:block"
+          className="animate-beam via-neon-pink/18 absolute top-0 hidden h-[45vh] w-px bg-gradient-to-b from-transparent to-transparent sm:block"
           style={{
             left: `${beam.x}%`,
             animationDelay: `${beam.delay}s`,
