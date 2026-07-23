@@ -4,7 +4,7 @@
   --font-sans: var(--font-vazir), system-ui, -apple-system, sans-serif;
 
   /* ── Base / ink scale ─────────────────────────────── */
-  --color-void: #05040a;
+  --color-void: #030207;
   --color-ink-900: #0a0813;
   --color-ink-800: #100d1d;
   --color-ink-700: #171328;
@@ -19,12 +19,20 @@
   --color-fog-500: #8f85a8;
   --color-fog-600: #6d6485;
 
-  /* ── Brand ────────────────────────────────────────── */
-  --color-neon-pink: #ff2e8b;
-  --color-neon-rose: #ff6ab8;
-  --color-neon-violet: #8b5cf6;
-  --color-neon-purple: #a855f7;
-  --color-neon-indigo: #6366f1;
+  /* ── Brand: deep, electric neon purple on near-black ── */
+  /* Purple is the primary accent — vivid ("جیغ") and deep ("تیره"). The
+     "pink"/"rose" names are kept (dozens of classes use them) but hold purple
+     shades, so every accent — including the old pink→violet gradients — reads
+     as electric purple. */
+  --color-neon-pink: #8b1fd6; /* deep neon purple — gradient starts, tints, borders */
+  --color-neon-rose: #c77dff; /* bright neon purple — text accents, hovers */
+  --color-neon-violet: #7c3aed; /* deep saturated violet — mid tone */
+  --color-neon-purple: #a020f0; /* electric neon purple — bright glows, gradient ends */
+  --color-neon-indigo: #6d28d9; /* deep purple — depth (no longer blue) */
+
+  /* Separate accent — used on its own, never fused beside purple. Deep + vivid
+     neon pink to match the dark, electric mood. */
+  --color-flare: #ff1493;
 
   /* ── Motion ───────────────────────────────────────── */
   --animate-aurora: aurora 18s ease-in-out infinite;
@@ -163,7 +171,7 @@
 
   /* Persian digits read better with lining figures in UI chrome */
   ::selection {
-    background: var(--color-neon-pink);
+    background: var(--color-flare);
     color: white;
   }
 
@@ -214,9 +222,8 @@
 @utility text-gradient {
   background-image: linear-gradient(
     110deg,
-    var(--color-neon-rose) 0%,
-    var(--color-neon-pink) 30%,
-    var(--color-neon-purple) 65%,
+    var(--color-neon-violet) 0%,
+    var(--color-neon-purple) 45%,
     var(--color-neon-indigo) 100%
   );
   background-clip: text;
@@ -296,7 +303,7 @@
   pointer-events: none;
   background: radial-gradient(
     420px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(255 46 139 / 0.14),
+    rgb(160 32 240 / 0.2),
     transparent 60%
   );
 }

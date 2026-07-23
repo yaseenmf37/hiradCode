@@ -4,7 +4,7 @@ export function Logo({ className }: { className?: string }) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <span className="relative flex h-8 w-8 items-center justify-center">
-        <span className="from-neon-pink to-neon-violet absolute inset-0 rounded-xl bg-gradient-to-br blur-[10px] opacity-70" />
+        <span className="from-neon-violet to-neon-purple absolute inset-0 rounded-xl bg-gradient-to-br blur-[10px] opacity-70" />
         <svg
           viewBox="0 0 32 32"
           className="relative h-8 w-8"
@@ -12,16 +12,31 @@ export function Logo({ className }: { className?: string }) {
           aria-hidden
         >
           <rect width="32" height="32" rx="9" fill="url(#logo-bg)" />
+          {/* </> — the code glyph from the Hirad Code mark */}
           <path
-            d="M11 22V10M11 16h10M21 10v12"
+            d="M12.5 11 8 16l4.5 5"
             stroke="white"
-            strokeWidth="2.4"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M19.5 11 24 16l-4.5 5"
+            stroke="white"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M17.6 9.6 14.4 22.4"
+            stroke="white"
+            strokeWidth="2.1"
             strokeLinecap="round"
           />
           <defs>
             <linearGradient id="logo-bg" x1="0" y1="0" x2="32" y2="32">
-              <stop stopColor="#ff2e8b" />
-              <stop offset="1" stopColor="#8b5cf6" />
+              <stop stopColor="#a020f0" />
+              <stop offset="1" stopColor="#6d28d9" />
             </linearGradient>
           </defs>
         </svg>

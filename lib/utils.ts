@@ -43,7 +43,7 @@ export function hexToRgbChannels(hex: string): string {
       : clean;
 
   const int = Number.parseInt(full, 16);
-  if (Number.isNaN(int) || full.length !== 6) return "255 46 139";
+  if (Number.isNaN(int) || full.length !== 6) return "160 32 240";
 
   return `${(int >> 16) & 255} ${(int >> 8) & 255} ${int & 255}`;
 }

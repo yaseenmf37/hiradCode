@@ -8,7 +8,7 @@ export function Eyebrow({ children }: { children: ReactNode }) {
     // w-fit: this sits inside flex-col parents, where the default `stretch`
     // would blow the pill out to the full column width.
     <span className="border-neon-pink/25 bg-neon-pink/10 text-neon-rose inline-flex w-fit items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold">
-      <span className="bg-neon-pink animate-pulse-glow h-1.5 w-1.5 rounded-full" />
+      <span className="bg-flare animate-pulse-glow h-1.5 w-1.5 rounded-full" />
       {children}
     </span>
   );

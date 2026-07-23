@@ -91,7 +91,7 @@ export function Navbar() {
                 reached by typing /admin. This slot holds the visitor CTA instead. */}
             <Link
               href="/contact"
-              className="from-neon-pink to-neon-violet hidden rounded-full bg-gradient-to-l px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_30px_-8px_rgb(255_46_139/0.7)] transition-all hover:brightness-110 sm:inline-flex"
+              className="from-neon-violet to-neon-purple hidden rounded-full bg-gradient-to-l px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_30px_-8px_rgb(160_32_240/0.7)] transition-all hover:brightness-110 sm:inline-flex"
             >
               شروع پروژه
             </Link>
@@ -165,7 +165,7 @@ export function Navbar() {
               >
                 <Link
                   href="/contact"
-                  className="from-neon-pink to-neon-violet flex h-14 items-center justify-center rounded-full bg-gradient-to-l text-base font-bold text-white"
+                  className="from-neon-violet to-neon-purple flex h-14 items-center justify-center rounded-full bg-gradient-to-l text-base font-bold text-white"
                 >
                   شروع پروژه
                 </Link>

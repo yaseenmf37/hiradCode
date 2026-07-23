@@ -76,7 +76,11 @@ export function Aurora() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none fixed inset-0 -z-10 overflow-hidden"
+      /* Height is pinned to the large-viewport height (URL-bar-hidden) and
+         anchored only at the top, so the mobile address bar collapsing on
+         scroll no longer resizes this layer — otherwise a bottom-anchored
+         `inset-0` makes the whole backdrop jump the moment the bar toggles. */
+      className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-[100lvh] overflow-hidden"
     >
       {/* Colour fields */}
       <div className="bg-neon-pink/20 animate-aurora absolute -top-52 right-[-12%] h-[38rem] w-[38rem] rounded-full blur-[140px]" />
