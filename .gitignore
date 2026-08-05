@@ -44,3 +44,5 @@ next-env.d.ts
 
 # local data (file-store driver)
 .data/
+
+.vercel

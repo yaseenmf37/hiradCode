@@ -6,20 +6,48 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Logo } from "@/components/site/logo";
+import type { Dictionary } from "@/lib/i18n";
+import { type Locale, localePath, switchLocalePath } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
-const LINKS = [
-  { href: "/", label: "خانه" },
-  { href: "/works", label: "نمونه‌کارها" },
-  { href: "/services", label: "خدمات" },
-  { href: "/about", label: "درباره ما" },
-  { href: "/contact", label: "تماس" },
-];
+const ROUTES = [
+  { href: "/", key: "home" },
+  { href: "/works", key: "works" },
+  { href: "/services", key: "services" },
+  { href: "/blog", key: "blog" },
+  { href: "/about", key: "about" },
+  { href: "/faq", key: "faq" },
+  { href: "/contact", key: "contact" },
+] as const;
 
-export function Navbar() {
-  const pathname = usePathname();
+export function Navbar({
+  locale,
+  dict,
+}: {
+  locale: Locale;
+  dict: Dictionary["nav"];
+}) {
+  const rawPathname = usePathname();
+  // The proxy serves Persian at prefix-free URLs but renders the internal /fa
+  // tree, so usePathname() can report "/fa/..." during prerender. Normalize to
+  // the public path so links and active state match the browser after hydration.
+  const pathname =
+    rawPathname === "/fa"
+      ? "/"
+      : rawPathname.startsWith("/fa/")
+        ? rawPathname.slice(3)
+        : rawPathname;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const other: Locale = locale === "fa" ? "en" : "fa";
+  const switchHref = switchLocalePath(pathname, other);
+
+  const links = ROUTES.map((route) => ({
+    href: localePath(locale, route.href),
+    label: dict[route.key],
+    root: route.href,
+  }));
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -44,8 +72,9 @@ export function Navbar() {
     };
   }, [open]);
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const homeHref = localePath(locale, "/");
+  const isActive = (href: string, root: string) =>
+    root === "/" ? pathname === href : pathname.startsWith(href);
 
   return (
     <>
@@ -58,23 +87,23 @@ export function Navbar() {
               : "border border-transparent bg-transparent",
           )}
         >
-          <Link href="/" className="shrink-0" aria-label="هیراد کد — خانه">
-            <Logo />
+          <Link href={homeHref} className="shrink-0" aria-label={dict.homeAria}>
+            <Logo locale={locale} />
           </Link>
 
           <div className="hidden items-center gap-1 md:flex">
-            {LINKS.map((link) => (
+            {links.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   "relative rounded-full px-4 py-2 text-sm font-medium transition-colors",
-                  isActive(link.href)
+                  isActive(link.href, link.root)
                     ? "text-fog-100"
                     : "text-fog-400 hover:text-fog-100",
                 )}
               >
-                {isActive(link.href) && (
+                {isActive(link.href, link.root) && (
                   <motion.span
                     layoutId="nav-active"
                     className="absolute inset-0 rounded-full bg-white/10"
@@ -87,19 +116,25 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* The panel is intentionally unlinked from the public site — it is
-                reached by typing /admin. This slot holds the visitor CTA instead. */}
             <Link
-              href="/contact"
+              href={switchHref}
+              hrefLang={other}
+              className="text-fog-300 hover:border-neon-pink/50 hover:text-fog-100 hidden items-center rounded-full border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-bold transition-all sm:inline-flex"
+            >
+              {dict.switchLabel}
+            </Link>
+
+            <Link
+              href={localePath(locale, "/contact")}
               className="from-neon-violet to-neon-purple hidden rounded-full bg-gradient-to-l px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_30px_-8px_rgb(176_38_255/0.7)] transition-all hover:brightness-110 sm:inline-flex"
             >
-              شروع پروژه
+              {dict.cta}
             </Link>
 
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              aria-label={open ? "بستن منو" : "باز کردن منو"}
+              aria-label={open ? dict.closeMenu : dict.openMenu}
               aria-expanded={open}
               className="text-fog-100 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 md:hidden"
             >
@@ -138,7 +173,7 @@ export function Navbar() {
             className="bg-void/95 fixed inset-0 z-40 backdrop-blur-xl md:hidden"
           >
             <div className="flex h-full flex-col justify-center gap-2 px-8">
-              {LINKS.map((link, i) => (
+              {links.map((link, i) => (
                 <motion.div
                   key={link.href}
                   initial={{ opacity: 0, x: 24 }}
@@ -149,7 +184,7 @@ export function Navbar() {
                     href={link.href}
                     className={cn(
                       "block border-b border-white/5 py-4 text-3xl font-bold transition-colors",
-                      isActive(link.href) ? "text-gradient" : "text-fog-300",
+                      isActive(link.href, link.root) ? "text-gradient" : "text-fog-300",
                     )}
                   >
                     {link.label}
@@ -161,13 +196,20 @@ export function Navbar() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="mt-8"
+                className="mt-8 flex items-center gap-3"
               >
                 <Link
-                  href="/contact"
-                  className="from-neon-violet to-neon-purple flex h-14 items-center justify-center rounded-full bg-gradient-to-l text-base font-bold text-white"
+                  href={localePath(locale, "/contact")}
+                  className="from-neon-violet to-neon-purple flex h-14 flex-1 items-center justify-center rounded-full bg-gradient-to-l text-base font-bold text-white"
                 >
-                  شروع پروژه
+                  {dict.cta}
+                </Link>
+                <Link
+                  href={switchHref}
+                  hrefLang={other}
+                  className="text-fog-200 flex h-14 items-center justify-center rounded-full border border-white/15 bg-white/5 px-6 text-base font-bold"
+                >
+                  {dict.switchLabel}
                 </Link>
               </motion.div>
             </div>

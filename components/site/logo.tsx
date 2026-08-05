@@ -1,6 +1,13 @@
+import type { Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/utils";
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({
+  className,
+  locale = "fa",
+}: {
+  className?: string;
+  locale?: Locale;
+}) {
   return (
     <span className={cn("flex items-center gap-2.5", className)}>
       <span className="relative flex h-8 w-8 items-center justify-center">
@@ -42,7 +49,15 @@ export function Logo({ className }: { className?: string }) {
         </svg>
       </span>
       <span className="text-fog-100 text-lg leading-none font-extrabold tracking-tight">
-        هیراد<span className="text-gradient"> کد</span>
+        {locale === "en" ? (
+          <>
+            Hirad<span className="text-gradient"> Code</span>
+          </>
+        ) : (
+          <>
+            هیراد<span className="text-gradient"> کد</span>
+          </>
+        )}
       </span>
     </span>
   );

@@ -1,7 +1,8 @@
 "use server";
 
 import { getMessageStore } from "@/lib/db";
-import { SUBJECT_OTHER } from "@/lib/types";
+import { getDictionary } from "@/lib/i18n";
+import { DEFAULT_LOCALE, isLocale } from "@/lib/i18n/config";
 
 export type ContactState = {
   status: "idle" | "success" | "error";
@@ -17,6 +18,10 @@ export async function submitContact(
   _prev: ContactState,
   formData: FormData,
 ): Promise<ContactState> {
+  const localeRaw = str(formData, "locale");
+  const locale = isLocale(localeRaw) ? localeRaw : DEFAULT_LOCALE;
+  const t = getDictionary(locale).contactForm;
+
   // Bots fill hidden fields; humans don't. Reply "sent" so they stop retrying.
   if (str(formData, "company")) return { status: "success" };
 
@@ -26,19 +31,20 @@ export async function submitContact(
   const budget = str(formData, "budget");
   const body = str(formData, "body");
 
-  // "سایر" is a placeholder for a subject the sender types themselves; prefer
-  // what they wrote, and fall back to the label if they left it blank.
+  // The last subject option ("سایر" / "Other") lets the sender type their own;
+  // prefer what they wrote, and fall back to the label if they left it blank.
+  const otherOption = t.subjects[t.subjects.length - 1];
   const picked = str(formData, "subject");
   const custom = str(formData, "subjectOther");
-  const subject = picked === SUBJECT_OTHER && custom ? custom : picked;
+  const subject = picked === otherOption && custom ? custom : picked;
 
   const errors: Record<string, string> = {};
-  if (name.length < 2) errors.name = "نام را وارد کنید.";
-  if (!EMAIL_RE.test(email)) errors.email = "ایمیل معتبر وارد کنید.";
-  if (body.length < 10) errors.body = "کمی بیشتر توضیح دهید (حداقل ۱۰ کاراکتر).";
+  if (name.length < 2) errors.name = t.errors.name;
+  if (!EMAIL_RE.test(email)) errors.email = t.errors.email;
+  if (body.length < 10) errors.body = t.errors.body;
 
   if (Object.keys(errors).length > 0) {
-    return { status: "error", message: "لطفاً خطاهای زیر را برطرف کنید.", errors };
+    return { status: "error", message: t.errors.fix, errors };
   }
 
   try {
@@ -46,21 +52,14 @@ export async function submitContact(
       name,
       email,
       phone: phone || null,
-      subject: subject || "بدون موضوع",
+      subject: subject || t.noSubject,
       budget: budget || null,
       body,
     });
 
-    return {
-      status: "success",
-      message: "پیام شما رسید. کمتر از ۲۴ ساعت دیگر جواب می‌دهیم.",
-    };
+    return { status: "success", message: t.successMessage };
   } catch (error) {
     console.error("contact submit failed:", error);
-    return {
-      status: "error",
-      message:
-        "ارسال پیام ممکن نشد. لطفاً دوباره تلاش کنید یا مستقیم ایمیل بزنید.",
-    };
+    return { status: "error", message: t.errors.sendFail };
   }
 }

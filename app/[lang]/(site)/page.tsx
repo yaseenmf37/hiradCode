@@ -9,11 +9,20 @@ import { ServiceIcon } from "@/components/site/service-icon";
 import { ButtonLink } from "@/components/ui/button";
 import { Reveal, RevealGroup, RevealItem } from "@/components/ui/reveal";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { PROCESS, SERVICES, TESTIMONIALS } from "@/lib/content";
+import { SERVICE_META } from "@/lib/content";
+import { getDictionary } from "@/lib/i18n";
+import { DEFAULT_LOCALE, isLocale, localePath } from "@/lib/i18n/config";
 import { getFeaturedProjects } from "@/lib/projects";
-import { SITE } from "@/lib/site-config";
+import { fmtNum } from "@/lib/utils";
 
-export default async function HomePage() {
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const { lang } = await params;
+  const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
+  const dict = getDictionary(locale);
   const featured = await getFeaturedProjects(3);
 
   return (
@@ -23,51 +32,41 @@ export default async function HomePage() {
         <div className="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
             <Reveal>
-              <Eyebrow>پذیرش پروژه برای بهار ۱۴۰۴</Eyebrow>
+              <Eyebrow>{dict.hero.eyebrow}</Eyebrow>
             </Reveal>
 
             <Reveal delay={0.08}>
               <h1 className="mt-6 text-4xl leading-[1.15] font-extrabold tracking-tight text-balance sm:text-5xl lg:text-6xl">
-                وب‌سایتی می‌سازیم که
+                {dict.hero.titleTop}
                 <br />
-                <span className="text-gradient">کارفرما را متوقف کند.</span>
+                <span className="text-gradient">{dict.hero.titleBottom}</span>
               </h1>
             </Reveal>
 
             <Reveal delay={0.16}>
               <p className="text-fog-400 mt-6 max-w-lg text-base leading-8 text-pretty sm:text-lg">
-                استودیو طراحی و توسعه وب. از هویت بصری تا آخرین خط کد — چیزی
-                تحویل می‌دهیم که هم زیباست، هم سریع، و هم واقعاً کار می‌کند.
+                {dict.hero.description}
               </p>
             </Reveal>
 
             <Reveal delay={0.24}>
               <div className="mt-9 flex flex-wrap gap-3">
-                <ButtonLink href="/works" size="lg">
-                  مشاهده نمونه‌کارها
+                <ButtonLink href={localePath(locale, "/works")} size="lg">
+                  {dict.hero.ctaWorks}
                 </ButtonLink>
-                <ButtonLink href="/contact" variant="outline" size="lg">
-                  شروع پروژه
+                <ButtonLink
+                  href={localePath(locale, "/contact")}
+                  variant="outline"
+                  size="lg"
+                >
+                  {dict.hero.ctaContact}
                 </ButtonLink>
               </div>
-            </Reveal>
-
-            <Reveal delay={0.32}>
-              <dl className="mt-14 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
-                {SITE.stats.map((stat) => (
-                  <div key={stat.label}>
-                    <dt className="text-gradient text-3xl font-extrabold tracking-tight">
-                      {stat.value}
-                    </dt>
-                    <dd className="text-fog-500 mt-1 text-xs">{stat.label}</dd>
-                  </div>
-                ))}
-              </dl>
             </Reveal>
           </div>
 
           <Reveal delay={0.2} y={40}>
-            <HeroVisual project={featured[0] ?? null} />
+            <HeroVisual project={featured[0] ?? null} dict={dict.heroVisual} />
           </Reveal>
         </div>
       </section>
@@ -81,18 +80,18 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <SectionHeading
-            eyebrow="نمونه‌کارها"
+            eyebrow={dict.featured.eyebrow}
             title={
               <>
-                کارهایی که به آن‌ها
+                {dict.featured.titleTop}
                 <br />
-                <span className="text-gradient">افتخار می‌کنیم.</span>
+                <span className="text-gradient">{dict.featured.titleBottom}</span>
               </>
             }
           />
           <Reveal delay={0.1}>
-            <ButtonLink href="/works" variant="outline">
-              همه پروژه‌ها
+            <ButtonLink href={localePath(locale, "/works")} variant="outline">
+              {dict.featured.all}
             </ButtonLink>
           </Reveal>
         </div>
@@ -101,13 +100,18 @@ export default async function HomePage() {
           <RevealGroup className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {featured.map((project, i) => (
               <RevealItem key={project.id}>
-                <ProjectCard project={project} priority={i === 0} />
+                <ProjectCard
+                  project={project}
+                  locale={locale}
+                  dict={dict.gallery}
+                  priority={i === 0}
+                />
               </RevealItem>
             ))}
           </RevealGroup>
         ) : (
           <p className="text-fog-500 glass mt-14 rounded-3xl p-12 text-center">
-            هنوز پروژه‌ای اضافه نشده. از پنل مدیریت اولین نمونه‌کار را اضافه کنید.
+            {dict.featured.empty}
           </p>
         )}
       </section>
@@ -116,37 +120,43 @@ export default async function HomePage() {
       <section className="relative py-24">
         <div className="mx-auto max-w-6xl px-6">
           <SectionHeading
-            eyebrow="خدمات"
+            eyebrow={dict.homeServices.eyebrow}
             title={
               <>
-                هر چیزی که برای یک حضور
+                {dict.homeServices.lead}
                 <br />
-                <span className="text-gradient">آنلاین جدی</span> لازم دارید.
+                <span className="text-gradient">{dict.homeServices.highlight}</span>
+                {dict.homeServices.tail}
               </>
             }
-            description="یک تیم، از اول تا آخر. لازم نیست بین چند نفر پاس‌کاری شوید."
-            align="center"
+            description={dict.homeServices.description}
           />
 
           <RevealGroup className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {SERVICES.map((service) => (
-              <RevealItem key={service.id}>
-                <Link href={`/services#${service.id}`} className="block h-full">
-                  <SpotlightCard className="group h-full p-7">
-                    <ServiceIcon name={service.icon} />
-                    <h3 className="mt-5 text-lg font-extrabold tracking-tight">
-                      {service.title}
-                    </h3>
-                    <p className="text-fog-400 mt-2.5 text-sm leading-7">
-                      {service.summary}
-                    </p>
-                    <span className="text-fog-600 group-hover:text-neon-rose mt-5 inline-block text-xs font-bold transition-colors">
-                      بیشتر بخوانید ←
-                    </span>
-                  </SpotlightCard>
-                </Link>
-              </RevealItem>
-            ))}
+            {dict.content.services.map((service, i) => {
+              const meta = SERVICE_META[i];
+              return (
+                <RevealItem key={meta.id}>
+                  <Link
+                    href={localePath(locale, `/services#${meta.id}`)}
+                    className="block h-full"
+                  >
+                    <SpotlightCard className="group h-full p-7">
+                      <ServiceIcon name={meta.icon} />
+                      <h3 className="mt-5 text-lg font-extrabold tracking-tight">
+                        {service.title}
+                      </h3>
+                      <p className="text-fog-400 mt-2.5 text-sm leading-7">
+                        {service.summary}
+                      </p>
+                      <span className="text-fog-600 group-hover:text-neon-rose mt-5 inline-block text-xs font-bold transition-colors">
+                        {dict.homeServices.readMore}
+                      </span>
+                    </SpotlightCard>
+                  </Link>
+                </RevealItem>
+              );
+            })}
           </RevealGroup>
         </div>
       </section>
@@ -154,23 +164,23 @@ export default async function HomePage() {
       {/* ── Process ──────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
-          eyebrow="فرآیند"
+          eyebrow={dict.process.eyebrow}
           title={
             <>
-              بدون غافلگیری،
+              {dict.process.titleTop}
               <br />
-              <span className="text-gradient">بدون ابهام.</span>
+              <span className="text-gradient">{dict.process.titleBottom}</span>
             </>
           }
-          description="از روز اول می‌دانید کجای کار هستیم، چه چیزی تحویل می‌گیرید و کی."
+          description={dict.process.description}
         />
 
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {PROCESS.map((phase, i) => (
-            <Reveal key={phase.step} delay={i * 0.08}>
-              <div className="glass relative h-full rounded-3xl p-7">
+          {dict.content.process.map((phase, i) => (
+            <Reveal key={phase.title} delay={i * 0.08} className="h-full">
+              <div className="glass relative flex h-full flex-col rounded-3xl p-7">
                 <span className="text-gradient text-5xl font-extrabold opacity-40">
-                  {phase.step}
+                  {fmtNum(locale, i + 1)}
                 </span>
                 <h3 className="mt-4 text-lg font-extrabold tracking-tight">
                   {phase.title}
@@ -178,9 +188,13 @@ export default async function HomePage() {
                 <p className="text-fog-400 mt-2.5 text-sm leading-7">
                   {phase.description}
                 </p>
-                <span className="text-neon-rose/70 border-neon-pink/20 bg-neon-pink/5 mt-5 inline-block rounded-full border px-3 py-1 text-[11px] font-bold">
-                  {phase.duration}
-                </span>
+                {/* mt-auto pins the pill row to the card floor so every pill
+                    lines up across cards regardless of description length. */}
+                <div className="mt-auto pt-5">
+                  <span className="text-neon-rose/70 border-neon-pink/20 bg-neon-pink/5 inline-block rounded-full border px-3 py-1 text-[11px] font-bold">
+                    {phase.duration}
+                  </span>
+                </div>
               </div>
             </Reveal>
           ))}
@@ -190,17 +204,19 @@ export default async function HomePage() {
       {/* ── Testimonials ─────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-6 py-24">
         <SectionHeading
-          eyebrow="نظر کارفرماها"
+          eyebrow={dict.testimonials.eyebrow}
           title={
             <>
-              حرف ما نه —<span className="text-gradient"> حرف آن‌ها.</span>
+              {dict.testimonials.titleTop}
+              <br />
+              <span className="text-gradient">{dict.testimonials.titleBottom}</span>
             </>
           }
           align="center"
         />
 
         <RevealGroup className="mt-14 grid gap-5 lg:grid-cols-3">
-          {TESTIMONIALS.map((item) => (
+          {dict.content.testimonials.map((item) => (
             <RevealItem key={item.name}>
               <figure className="glass flex h-full flex-col rounded-3xl p-7">
                 <span className="text-neon-pink/30 text-5xl leading-none font-extrabold">
@@ -224,7 +240,7 @@ export default async function HomePage() {
         </RevealGroup>
       </section>
 
-      <CTA />
+      <CTA locale={locale} dict={dict.cta} />
     </>
   );
 }

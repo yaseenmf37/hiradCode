@@ -2,28 +2,35 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SpotlightCard } from "@/components/ui/spotlight-card";
+import type { Dictionary } from "@/lib/i18n";
+import { type Locale, localePath } from "@/lib/i18n/config";
 import type { Project } from "@/lib/types";
-import { cn, hexToRgbChannels } from "@/lib/utils";
+import { cn, hexToRgbChannels, localizeProject } from "@/lib/utils";
 
 export function ProjectCard({
   project,
+  locale,
+  dict,
   priority = false,
   className,
 }: {
   project: Project;
+  locale: Locale;
+  dict: Dictionary["gallery"];
   priority?: boolean;
   className?: string;
 }) {
   const accent = hexToRgbChannels(project.accent);
+  const { title, subtitle } = localizeProject(project, locale);
 
   return (
     <SpotlightCard className={cn("group h-full", className)}>
-      <Link href={`/works/${project.slug}`} className="flex h-full flex-col">
+      <Link href={localePath(locale, `/works/${project.slug}`)} className="flex h-full flex-col">
         <div className="relative aspect-[16/10] overflow-hidden">
           {project.coverImage ? (
             <Image
               src={project.coverImage}
-              alt={project.title}
+              alt={title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               priority={priority}
@@ -44,7 +51,7 @@ export function ProjectCard({
 
           {project.featured && (
             <span className="glass-strong text-fog-100 absolute top-4 left-4 rounded-full px-3 py-1 text-[11px] font-bold">
-              ویژه
+              {dict.featured}
             </span>
           )}
         </div>
@@ -58,11 +65,11 @@ export function ProjectCard({
           </span>
 
           <h3 className="mt-2 text-xl leading-tight font-extrabold tracking-tight">
-            {project.title}
+            {title}
           </h3>
 
           <p className="text-fog-400 mt-2 line-clamp-2 flex-1 text-sm leading-7">
-            {project.subtitle}
+            {subtitle}
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2">
@@ -77,7 +84,7 @@ export function ProjectCard({
           </div>
 
           <span className="text-fog-500 group-hover:text-neon-rose mt-5 inline-flex items-center gap-2 text-sm font-bold transition-colors">
-            مشاهده پروژه
+            {dict.viewProject}
             <svg
               width="16"
               height="16"

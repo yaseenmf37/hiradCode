@@ -6,7 +6,14 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import { SEED_PROJECTS } from "./seed";
-import type { Message, MessageInput, Project, ProjectInput } from "./types";
+import type {
+  Message,
+  MessageInput,
+  Post,
+  PostInput,
+  Project,
+  ProjectInput,
+} from "./types";
 
 /* ══════════════════════════════════════════════════════
    Two drivers, one interface.
@@ -34,6 +41,15 @@ export type MessageStore = {
   remove(id: string): Promise<boolean>;
 };
 
+export type PostStore = {
+  list(): Promise<Post[]>;
+  getBySlug(slug: string): Promise<Post | null>;
+  getById(id: string): Promise<Post | null>;
+  create(input: PostInput): Promise<Post>;
+  update(id: string, input: PostInput): Promise<Post | null>;
+  remove(id: string): Promise<boolean>;
+};
+
 export const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 /** True on Vercel with no database — writes cannot persist there. */
@@ -48,14 +64,18 @@ const slugify = (raw: string) =>
     .replace(/-{2,}/g, "-")
     .replace(/^-|-$/g, "") || "project";
 
-/** Appends -2, -3, … until the slug is free. */
-async function uniqueSlug(store: Store, desired: string, ignoreId?: string) {
+/** Appends -2, -3, … until the slug is free. Works for any store with getBySlug. */
+async function uniqueSlug(
+  lookup: (slug: string) => Promise<{ id: string } | null>,
+  desired: string,
+  ignoreId?: string,
+) {
   const base = slugify(desired);
   let candidate = base;
   let n = 2;
 
   for (;;) {
-    const clash = await store.getBySlug(candidate);
+    const clash = await lookup(candidate);
     if (!clash || clash.id === ignoreId) return candidate;
     candidate = `${base}-${n++}`;
   }
@@ -74,6 +94,9 @@ const rowToProject = (row: Row): Project => ({
   subtitle: String(row.subtitle ?? ""),
   category: String(row.category ?? ""),
   description: String(row.description ?? ""),
+  titleEn: (row.title_en as string | null) ?? null,
+  subtitleEn: (row.subtitle_en as string | null) ?? null,
+  descriptionEn: (row.description_en as string | null) ?? null,
   coverImage: String(row.cover_image ?? ""),
   gallery: (row.gallery as string[]) ?? [],
   liveUrl: (row.live_url as string | null) ?? null,
@@ -102,6 +125,24 @@ const rowToMessage = (row: Row): Message => ({
   createdAt: new Date(row.created_at as string).toISOString(),
 });
 
+const rowToPost = (row: Row): Post => ({
+  id: String(row.id),
+  slug: String(row.slug),
+  title: String(row.title),
+  excerpt: String(row.excerpt ?? ""),
+  content: String(row.content ?? ""),
+  coverImage: String(row.cover_image ?? ""),
+  tags: (row.tags as string[]) ?? [],
+  titleEn: (row.title_en as string | null) ?? null,
+  excerptEn: (row.excerpt_en as string | null) ?? null,
+  contentEn: (row.content_en as string | null) ?? null,
+  published: Boolean(row.published),
+  publishedAt: row.published_at
+    ? new Date(row.published_at as string).toISOString()
+    : null,
+  createdAt: new Date(row.created_at as string).toISOString(),
+});
+
 const sql = () => neon(process.env.DATABASE_URL!);
 
 let schemaReady: Promise<void> | null = null;
@@ -119,6 +160,9 @@ function ensureSchema() {
         subtitle    TEXT NOT NULL DEFAULT '',
         category    TEXT NOT NULL DEFAULT '',
         description TEXT NOT NULL DEFAULT '',
+        title_en       TEXT,
+        subtitle_en    TEXT,
+        description_en TEXT,
         cover_image TEXT NOT NULL DEFAULT '',
         gallery     JSONB NOT NULL DEFAULT '[]'::jsonb,
         live_url    TEXT,
@@ -149,6 +193,29 @@ function ensureSchema() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `;
+
+    await db`
+      CREATE TABLE IF NOT EXISTS posts (
+        id           TEXT PRIMARY KEY,
+        slug         TEXT UNIQUE NOT NULL,
+        title        TEXT NOT NULL,
+        excerpt      TEXT NOT NULL DEFAULT '',
+        content      TEXT NOT NULL DEFAULT '',
+        cover_image  TEXT NOT NULL DEFAULT '',
+        tags         JSONB NOT NULL DEFAULT '[]'::jsonb,
+        title_en     TEXT,
+        excerpt_en   TEXT,
+        content_en   TEXT,
+        published    BOOLEAN NOT NULL DEFAULT FALSE,
+        published_at TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `;
+
+    // Bilingual columns were added later; bring existing tables up to date.
+    await db`ALTER TABLE projects ADD COLUMN IF NOT EXISTS title_en TEXT`;
+    await db`ALTER TABLE projects ADD COLUMN IF NOT EXISTS subtitle_en TEXT`;
+    await db`ALTER TABLE projects ADD COLUMN IF NOT EXISTS description_en TEXT`;
 
     // Seed only an untouched table, so a deliberately emptied portfolio stays empty.
     const [{ count }] = (await db`SELECT COUNT(*)::int AS count FROM projects`) as [
@@ -210,15 +277,17 @@ function createPostgresStore(): Store {
     async create(input) {
       await ensureSchema();
       const id = randomUUID();
-      const slug = await uniqueSlug(store, input.slug || input.title);
+      const slug = await uniqueSlug((s) => store.getBySlug(s),input.slug || input.title);
       const rows = (await sql()`
         INSERT INTO projects (
-          id, slug, title, subtitle, category, description, cover_image,
+          id, slug, title, subtitle, category, description,
+          title_en, subtitle_en, description_en, cover_image,
           gallery, live_url, client, year, duration, role, tags, services,
           results, featured, accent, sort_order
         ) VALUES (
           ${id}, ${slug}, ${input.title}, ${input.subtitle}, ${input.category},
-          ${input.description}, ${input.coverImage}, ${JSON.stringify(input.gallery)},
+          ${input.description}, ${input.titleEn ?? null}, ${input.subtitleEn ?? null},
+          ${input.descriptionEn ?? null}, ${input.coverImage}, ${JSON.stringify(input.gallery)},
           ${input.liveUrl}, ${input.client}, ${input.year}, ${input.duration},
           ${input.role}, ${JSON.stringify(input.tags)}, ${JSON.stringify(input.services)},
           ${JSON.stringify(input.results)}, ${input.featured}, ${input.accent},
@@ -231,7 +300,7 @@ function createPostgresStore(): Store {
 
     async update(id, input) {
       await ensureSchema();
-      const slug = await uniqueSlug(store, input.slug || input.title, id);
+      const slug = await uniqueSlug((s) => store.getBySlug(s),input.slug || input.title, id);
       const rows = (await sql()`
         UPDATE projects SET
           slug = ${slug},
@@ -239,6 +308,9 @@ function createPostgresStore(): Store {
           subtitle = ${input.subtitle},
           category = ${input.category},
           description = ${input.description},
+          title_en = ${input.titleEn ?? null},
+          subtitle_en = ${input.subtitleEn ?? null},
+          description_en = ${input.descriptionEn ?? null},
           cover_image = ${input.coverImage},
           gallery = ${JSON.stringify(input.gallery)},
           live_url = ${input.liveUrl},
@@ -308,6 +380,89 @@ function createPostgresMessageStore(): MessageStore {
   };
 }
 
+function createPostgresPostStore(): PostStore {
+  const store: PostStore = {
+    async list() {
+      await ensureSchema();
+      const rows = (await sql()`
+        SELECT * FROM posts ORDER BY COALESCE(published_at, created_at) DESC
+      `) as Row[];
+      return rows.map(rowToPost);
+    },
+
+    async getBySlug(slug) {
+      await ensureSchema();
+      const rows = (await sql()`
+        SELECT * FROM posts WHERE slug = ${slug} LIMIT 1
+      `) as Row[];
+      return rows[0] ? rowToPost(rows[0]) : null;
+    },
+
+    async getById(id) {
+      await ensureSchema();
+      const rows = (await sql()`
+        SELECT * FROM posts WHERE id = ${id} LIMIT 1
+      `) as Row[];
+      return rows[0] ? rowToPost(rows[0]) : null;
+    },
+
+    async create(input) {
+      await ensureSchema();
+      const id = randomUUID();
+      const slug = await uniqueSlug((s) => store.getBySlug(s), input.slug || input.title);
+      const rows = (await sql()`
+        INSERT INTO posts (
+          id, slug, title, excerpt, content, cover_image, tags,
+          title_en, excerpt_en, content_en, published, published_at
+        ) VALUES (
+          ${id}, ${slug}, ${input.title}, ${input.excerpt}, ${input.content},
+          ${input.coverImage}, ${JSON.stringify(input.tags)},
+          ${input.titleEn ?? null}, ${input.excerptEn ?? null}, ${input.contentEn ?? null},
+          ${input.published}, ${input.publishedAt}
+        )
+        RETURNING *
+      `) as Row[];
+      return rowToPost(rows[0]);
+    },
+
+    async update(id, input) {
+      await ensureSchema();
+      const slug = await uniqueSlug(
+        (s) => store.getBySlug(s),
+        input.slug || input.title,
+        id,
+      );
+      const rows = (await sql()`
+        UPDATE posts SET
+          slug = ${slug},
+          title = ${input.title},
+          excerpt = ${input.excerpt},
+          content = ${input.content},
+          cover_image = ${input.coverImage},
+          tags = ${JSON.stringify(input.tags)},
+          title_en = ${input.titleEn ?? null},
+          excerpt_en = ${input.excerptEn ?? null},
+          content_en = ${input.contentEn ?? null},
+          published = ${input.published},
+          published_at = ${input.publishedAt}
+        WHERE id = ${id}
+        RETURNING *
+      `) as Row[];
+      return rows[0] ? rowToPost(rows[0]) : null;
+    },
+
+    async remove(id) {
+      await ensureSchema();
+      const rows = (await sql()`
+        DELETE FROM posts WHERE id = ${id} RETURNING id
+      `) as Row[];
+      return rows.length > 0;
+    },
+  };
+
+  return store;
+}
+
 /* ══════════════════════════════════════════════════════
    Local JSON files
    ══════════════════════════════════════════════════════ */
@@ -354,7 +509,7 @@ function createFileStore(): Store {
       const projects = await read();
       const project: Project = {
         ...input,
-        slug: await uniqueSlug(store, input.slug || input.title),
+        slug: await uniqueSlug((s) => store.getBySlug(s),input.slug || input.title),
         id: randomUUID(),
         createdAt: new Date().toISOString(),
       };
@@ -370,7 +525,7 @@ function createFileStore(): Store {
       const updated: Project = {
         ...projects[index],
         ...input,
-        slug: await uniqueSlug(store, input.slug || input.title, id),
+        slug: await uniqueSlug((s) => store.getBySlug(s),input.slug || input.title, id),
       };
       projects[index] = updated;
       await writeJson("projects", projects);
@@ -430,6 +585,68 @@ function createFileMessageStore(): MessageStore {
   };
 }
 
+function createFilePostStore(): PostStore {
+  const read = () => readJson<Post[]>("posts", []);
+
+  const sorted = (posts: Post[]) =>
+    [...posts].sort(
+      (a, b) =>
+        new Date(b.publishedAt ?? b.createdAt).getTime() -
+        new Date(a.publishedAt ?? a.createdAt).getTime(),
+    );
+
+  const store: PostStore = {
+    async list() {
+      return sorted(await read());
+    },
+
+    async getBySlug(slug) {
+      return (await read()).find((p) => p.slug === slug) ?? null;
+    },
+
+    async getById(id) {
+      return (await read()).find((p) => p.id === id) ?? null;
+    },
+
+    async create(input) {
+      const posts = await read();
+      const post: Post = {
+        ...input,
+        slug: await uniqueSlug((s) => store.getBySlug(s), input.slug || input.title),
+        id: randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      await writeJson("posts", [...posts, post]);
+      return post;
+    },
+
+    async update(id, input) {
+      const posts = await read();
+      const index = posts.findIndex((p) => p.id === id);
+      if (index === -1) return null;
+
+      const updated: Post = {
+        ...posts[index],
+        ...input,
+        slug: await uniqueSlug((s) => store.getBySlug(s), input.slug || input.title, id),
+      };
+      posts[index] = updated;
+      await writeJson("posts", posts);
+      return updated;
+    },
+
+    async remove(id) {
+      const posts = await read();
+      const next = posts.filter((p) => p.id !== id);
+      if (next.length === posts.length) return false;
+      await writeJson("posts", next);
+      return true;
+    },
+  };
+
+  return store;
+}
+
 /* ══════════════════════════════════════════════════════
    Read-only fallback (Vercel, no database)
    ══════════════════════════════════════════════════════ */
@@ -473,12 +690,34 @@ function createReadOnlyMessageStore(): MessageStore {
   };
 }
 
+function createReadOnlyPostStore(): PostStore {
+  const reject = async (): Promise<never> => {
+    throw new Error(NO_DB_ERROR);
+  };
+
+  return {
+    async list() {
+      return [];
+    },
+    async getBySlug() {
+      return null;
+    },
+    async getById() {
+      return null;
+    },
+    create: reject,
+    update: reject,
+    remove: reject,
+  };
+}
+
 /* ══════════════════════════════════════════════════════
    Selection
    ══════════════════════════════════════════════════════ */
 
 let projectStore: Store | null = null;
 let messageStore: MessageStore | null = null;
+let postStore: PostStore | null = null;
 
 export function getStore(): Store {
   projectStore ??= hasDatabase
@@ -496,4 +735,13 @@ export function getMessageStore(): MessageStore {
       ? createReadOnlyMessageStore()
       : createFileMessageStore();
   return messageStore;
+}
+
+export function getPostStore(): PostStore {
+  postStore ??= hasDatabase
+    ? createPostgresPostStore()
+    : isReadOnly
+      ? createReadOnlyPostStore()
+      : createFilePostStore();
+  return postStore;
 }

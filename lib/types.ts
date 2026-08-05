@@ -10,6 +10,11 @@ export type Project = {
   subtitle: string;
   category: string;
   description: string;
+  // Optional English copy for the /en site. Empty → falls back to the Persian
+  // fields. The admin stays Persian; these are just extra optional inputs.
+  titleEn?: string | null;
+  subtitleEn?: string | null;
+  descriptionEn?: string | null;
   coverImage: string;
   gallery: string[];
   liveUrl: string | null;
@@ -28,6 +33,26 @@ export type Project = {
 
 /** Everything a project needs except server-assigned identity fields. */
 export type ProjectInput = Omit<Project, "id" | "createdAt">;
+
+export type Post = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string; // Markdown
+  coverImage: string;
+  tags: string[];
+  // Optional English copy for /en/blog. Empty → falls back to the Persian field.
+  titleEn?: string | null;
+  excerptEn?: string | null;
+  contentEn?: string | null;
+  published: boolean;
+  publishedAt: string | null; // ISO; set the first time a post goes live
+  createdAt: string;
+};
+
+/** Everything a post needs except server-assigned identity fields. */
+export type PostInput = Omit<Post, "id" | "createdAt">;
 
 export type Message = {
   id: string;
@@ -79,3 +104,6 @@ export const CATEGORIES = [
   "شخصی و پورتفولیو",
   "اپلیکیشن وب",
 ] as const;
+
+/** Picking this in the project form reveals a free-text field for a custom category. */
+export const CATEGORY_OTHER = "سایر";

@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { isAuthConfigured, isLoggedIn, login, logout } from "@/lib/auth";
-import { getMessageStore, getStore } from "@/lib/db";
-import type { ProjectInput } from "@/lib/types";
+import { getMessageStore, getPostStore, getStore } from "@/lib/db";
+import { CATEGORY_OTHER, type PostInput, type ProjectInput } from "@/lib/types";
 
 /* ══════════════════════════════════════════════════════
    Server actions are public HTTP endpoints. Every mutating action below
@@ -16,12 +16,18 @@ async function requireAuth() {
   if (!(await isLoggedIn())) redirect("/admin/login");
 }
 
-/** Public pages are statically rendered, so every write must invalidate them. */
-function revalidatePublic(slug?: string) {
-  revalidatePath("/", "layout");
-  revalidatePath("/works");
-  if (slug) revalidatePath(`/works/${slug}`);
+/** Public pages are statically rendered, so every write must invalidate them.
+ *  Routes live under the [lang] segment, so revalidate that layout to cascade
+ *  to every locale and nested page. */
+function revalidatePublic() {
+  revalidatePath("/[lang]", "layout");
   revalidatePath("/admin/projects");
+  revalidatePath("/admin");
+}
+
+function revalidateBlog() {
+  revalidatePath("/[lang]", "layout");
+  revalidatePath("/admin/blog");
   revalidatePath("/admin");
 }
 
@@ -84,12 +90,21 @@ function parseProject(formData: FormData): ProjectInput {
 
   const year = str(formData, "year");
 
+  // "سایر" swaps the dropdown value for whatever the admin typed in the
+  // free-text field, so custom categories store their real name.
+  const rawCategory = str(formData, "category");
+  const category =
+    rawCategory === CATEGORY_OTHER ? str(formData, "categoryOther") : rawCategory;
+
   return {
     title: str(formData, "title"),
     slug: str(formData, "slug"),
     subtitle: str(formData, "subtitle"),
-    category: str(formData, "category"),
+    category,
     description: str(formData, "description"),
+    titleEn: str(formData, "titleEn") || null,
+    subtitleEn: str(formData, "subtitleEn") || null,
+    descriptionEn: str(formData, "descriptionEn") || null,
     coverImage: str(formData, "coverImage"),
     gallery: list(formData, "gallery"),
     liveUrl: str(formData, "liveUrl") || null,
@@ -138,11 +153,16 @@ export async function saveProjectAction(
   const input = parseProject(formData);
   const errors = validate(input);
 
+  // When "سایر" is chosen but the free-text field is empty, point the error at
+  // that field rather than the (still-populated) dropdown.
+  if (str(formData, "category") === CATEGORY_OTHER && !input.category) {
+    delete errors.category;
+    errors.categoryOther = "نام دسته‌بندی دلخواه را وارد کنید.";
+  }
+
   if (Object.keys(errors).length > 0) {
     return { status: "error", message: "چند فیلد نیاز به اصلاح دارند.", errors };
   }
-
-  let slug: string;
 
   try {
     const saved = id
@@ -150,7 +170,6 @@ export async function saveProjectAction(
       : await getStore().create(input);
 
     if (!saved) return { status: "error", message: "پروژه پیدا نشد." };
-    slug = saved.slug;
   } catch (error) {
     console.error("saveProject failed:", error);
     return {
@@ -159,7 +178,7 @@ export async function saveProjectAction(
     };
   }
 
-  revalidatePublic(slug);
+  revalidatePublic();
   redirect("/admin/projects?saved=1");
 }
 
@@ -184,7 +203,7 @@ export async function toggleFeaturedAction(formData: FormData) {
   // id/createdAt are server-owned; everything else round-trips unchanged.
   const { id: _id, createdAt: _createdAt, ...rest } = project;
   await getStore().update(id, { ...rest, featured: !project.featured });
-  revalidatePublic(project.slug);
+  revalidatePublic();
 }
 
 /* ── Messages ──────────────────────────────────────── */
@@ -210,4 +229,109 @@ export async function deleteMessageAction(formData: FormData) {
   await getMessageStore().remove(id);
   revalidatePath("/admin/messages");
   revalidatePath("/admin");
+}
+
+/* ── Blog posts ────────────────────────────────────── */
+
+export type PostFormState = {
+  status: "idle" | "error";
+  message?: string;
+  errors?: Record<string, string>;
+};
+
+function parsePost(formData: FormData): PostInput {
+  return {
+    title: str(formData, "title"),
+    slug: str(formData, "slug"),
+    excerpt: str(formData, "excerpt"),
+    content: str(formData, "content"),
+    coverImage: str(formData, "coverImage"),
+    tags: csv(formData, "tags"),
+    titleEn: str(formData, "titleEn") || null,
+    excerptEn: str(formData, "excerptEn") || null,
+    contentEn: str(formData, "contentEn") || null,
+    published: formData.get("published") === "on",
+    publishedAt: null, // resolved in the action, which can read the old value
+  };
+}
+
+function validatePost(input: PostInput) {
+  const errors: Record<string, string> = {};
+  if (input.title.length < 2) errors.title = "عنوان مقاله را وارد کنید.";
+  if (input.excerpt.length < 5) errors.excerpt = "یک خلاصه کوتاه وارد کنید.";
+  if (input.content.length < 20) {
+    errors.content = "متن مقاله حداقل ۲۰ کاراکتر باشد.";
+  }
+  return errors;
+}
+
+export async function savePostAction(
+  _prev: PostFormState,
+  formData: FormData,
+): Promise<PostFormState> {
+  await requireAuth();
+
+  const id = str(formData, "id");
+  const input = parsePost(formData);
+  const errors = validatePost(input);
+
+  if (Object.keys(errors).length > 0) {
+    return { status: "error", message: "چند فیلد نیاز به اصلاح دارند.", errors };
+  }
+
+  // Stamp the publish date the first time a post goes live; keep it afterwards.
+  let publishedAt: string | null = null;
+  if (input.published) {
+    const existing = id ? await getPostStore().getById(id) : null;
+    publishedAt = existing?.publishedAt ?? new Date().toISOString();
+  }
+  const toSave: PostInput = { ...input, publishedAt };
+
+  try {
+    const saved = id
+      ? await getPostStore().update(id, toSave)
+      : await getPostStore().create(toSave);
+
+    if (!saved) return { status: "error", message: "مقاله پیدا نشد." };
+  } catch (error) {
+    console.error("savePost failed:", error);
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "ذخیره مقاله ممکن نشد.",
+    };
+  }
+
+  revalidateBlog();
+  redirect("/admin/blog?saved=1");
+}
+
+export async function deletePostAction(formData: FormData) {
+  await requireAuth();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  await getPostStore().remove(id);
+  revalidateBlog();
+  redirect("/admin/blog?deleted=1");
+}
+
+export async function togglePublishAction(formData: FormData) {
+  await requireAuth();
+
+  const id = String(formData.get("id") ?? "");
+  const post = await getPostStore().getById(id);
+  if (!post) return;
+
+  const { id: _id, createdAt: _createdAt, ...rest } = post;
+  const nextPublished = !post.published;
+
+  await getPostStore().update(id, {
+    ...rest,
+    published: nextPublished,
+    publishedAt: nextPublished
+      ? (post.publishedAt ?? new Date().toISOString())
+      : post.publishedAt,
+  });
+  revalidateBlog();
 }

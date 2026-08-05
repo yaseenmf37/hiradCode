@@ -4,25 +4,30 @@ import { AnimatePresence, motion } from "motion/react";
 import { useMemo, useState } from "react";
 
 import { ProjectCard } from "@/components/site/project-card";
+import type { Dictionary } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n/config";
 import type { Project } from "@/lib/types";
-import { cn, toFa } from "@/lib/utils";
-
-const ALL = "همه";
+import { cn, fmtNum } from "@/lib/utils";
 
 export function WorksGallery({
   projects,
   categories,
+  locale,
+  dict,
 }: {
   projects: Project[];
   categories: string[];
+  locale: Locale;
+  dict: Dictionary["gallery"];
 }) {
+  const ALL = dict.all;
   const [active, setActive] = useState(ALL);
 
-  const filters = useMemo(() => [ALL, ...categories], [categories]);
+  const filters = useMemo(() => [ALL, ...categories], [ALL, categories]);
 
   const visible = useMemo(
     () => (active === ALL ? projects : projects.filter((p) => p.category === active)),
-    [projects, active],
+    [projects, active, ALL],
   );
 
   const countFor = (filter: string) =>
@@ -33,10 +38,8 @@ export function WorksGallery({
   if (projects.length === 0) {
     return (
       <div className="glass mt-12 rounded-3xl p-16 text-center">
-        <p className="text-fog-300 text-lg font-bold">هنوز پروژه‌ای اضافه نشده</p>
-        <p className="text-fog-500 mt-2 text-sm">
-          از پنل مدیریت اولین نمونه‌کار را اضافه کنید.
-        </p>
+        <p className="text-fog-300 text-lg font-bold">{dict.emptyTitle}</p>
+        <p className="text-fog-500 mt-2 text-sm">{dict.emptyBody}</p>
       </div>
     );
   }
@@ -67,7 +70,7 @@ export function WorksGallery({
               <span className="relative z-10">
                 {filter}
                 <span className={cn("ms-1.5 text-[11px]", !isActive && "text-fog-600")}>
-                  {toFa(countFor(filter))}
+                  {fmtNum(locale, countFor(filter))}
                 </span>
               </span>
             </button>
@@ -86,7 +89,7 @@ export function WorksGallery({
               exit={{ opacity: 0, scale: 0.94 }}
               transition={{ duration: 0.35, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
             >
-              <ProjectCard project={project} priority={i < 3} />
+              <ProjectCard project={project} locale={locale} dict={dict} priority={i < 3} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -94,7 +97,7 @@ export function WorksGallery({
 
       {visible.length === 0 && (
         <p className="text-fog-500 glass mt-10 rounded-3xl p-12 text-center">
-          پروژه‌ای در این دسته‌بندی وجود ندارد.
+          {dict.emptyCategory}
         </p>
       )}
     </>

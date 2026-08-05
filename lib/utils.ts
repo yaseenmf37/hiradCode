@@ -1,8 +1,35 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import type { Locale } from "./i18n/config";
+import type { Post, Project } from "./types";
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/**
+ * Picks the project's display text for a locale. English falls back to the
+ * Persian field whenever the English one is empty, so half-translated projects
+ * still render cleanly.
+ */
+export function localizeProject(project: Project, locale: Locale) {
+  const useEn = locale === "en";
+  return {
+    title: (useEn && project.titleEn) || project.title,
+    subtitle: (useEn && project.subtitleEn) || project.subtitle,
+    description: (useEn && project.descriptionEn) || project.description,
+  };
+}
+
+/** Same fallback rule as localizeProject, for blog posts. */
+export function localizePost(post: Post, locale: Locale) {
+  const useEn = locale === "en";
+  return {
+    title: (useEn && post.titleEn) || post.title,
+    excerpt: (useEn && post.excerptEn) || post.excerpt,
+    content: (useEn && post.contentEn) || post.content,
+  };
 }
 
 /**
@@ -24,6 +51,18 @@ const FA_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
 /** 1403 → ۱۴۰۳. Used anywhere a number is read as prose. */
 export function toFa(value: string | number): string {
   return String(value).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
+}
+
+/** Persian digits for fa, plain Latin digits for en. */
+export function fmtNum(locale: Locale, value: string | number): string {
+  return locale === "en" ? String(value) : toFa(value);
+}
+
+/** Localized long date — Persian (Jalali) calendar for fa, Gregorian for en. */
+export function formatDate(locale: Locale, iso: string): string {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fa-IR", {
+    dateStyle: "long",
+  }).format(new Date(iso));
 }
 
 /** Strips the protocol so links read as "example.com" rather than the full URL. */

@@ -5,26 +5,38 @@ import { useState } from "react";
 
 import { SectionHeading } from "@/components/site/section-heading";
 import { Reveal } from "@/components/ui/reveal";
-import { FAQ } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
-export function Faq() {
+type FaqItem = { question: string; answer: string };
+
+export function Faq({
+  items,
+  heading,
+  showHeading = true,
+}: {
+  items: FaqItem[];
+  heading: { eyebrow: string; lead: string; highlight: string };
+  showHeading?: boolean;
+}) {
   const [open, setOpen] = useState<number | null>(0);
 
   return (
     <section className="mx-auto max-w-3xl px-6 py-20">
-      <SectionHeading
-        eyebrow="سوالات پرتکرار"
-        title={
-          <>
-            چیزهایی که معمولاً <span className="text-gradient">می‌پرسند.</span>
-          </>
-        }
-        align="center"
-      />
+      {showHeading && (
+        <SectionHeading
+          eyebrow={heading.eyebrow}
+          title={
+            <>
+              {heading.lead}
+              <span className="text-gradient">{heading.highlight}</span>
+            </>
+          }
+          align="center"
+        />
+      )}
 
-      <div className="mt-12 space-y-3">
-        {FAQ.map((item, i) => {
+      <div className={showHeading ? "mt-12 space-y-3" : "space-y-3"}>
+        {items.map((item, i) => {
           const isOpen = open === i;
 
           return (

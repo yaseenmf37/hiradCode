@@ -4,6 +4,7 @@ import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 import Image from "next/image";
 import type { MouseEvent } from "react";
 
+import type { Dictionary } from "@/lib/i18n";
 import type { Project } from "@/lib/types";
 import { prettyUrl } from "@/lib/utils";
 
@@ -11,7 +12,13 @@ import { prettyUrl } from "@/lib/utils";
  * Browser frame showing the newest featured project, tilting toward the cursor.
  * Springs keep it from snapping; the whole thing is decorative and hidden from AT.
  */
-export function HeroVisual({ project }: { project: Project | null }) {
+export function HeroVisual({
+  project,
+  dict,
+}: {
+  project: Project | null;
+  dict: Dictionary["heroVisual"];
+}) {
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
 
@@ -88,16 +95,16 @@ export function HeroVisual({ project }: { project: Project | null }) {
         style={{ transform: "translateZ(60px)" }}
         className="glass-strong animate-float absolute -bottom-6 -left-6 rounded-2xl px-4 py-3 shadow-xl"
       >
-        <p className="text-fog-500 text-[10px]">نمره Lighthouse</p>
-        <p className="text-gradient text-2xl font-extrabold">۹۸</p>
+        <p className="text-fog-500 text-[10px]">{dict.lighthouse}</p>
+        <p className="text-gradient text-2xl font-extrabold">{dict.lighthouseValue}</p>
       </motion.div>
 
       <motion.div
         style={{ transform: "translateZ(60px)" }}
         className="glass-strong animate-float-slow absolute -top-5 -right-5 rounded-2xl px-4 py-3 shadow-xl"
       >
-        <p className="text-fog-500 text-[10px]">تحویل پروژه</p>
-        <p className="text-gradient text-2xl font-extrabold">۶ هفته</p>
+        <p className="text-fog-500 text-[10px]">{dict.delivery}</p>
+        <p className="text-gradient text-2xl font-extrabold">{dict.deliveryValue}</p>
       </motion.div>
     </div>
   );

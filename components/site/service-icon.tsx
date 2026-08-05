@@ -1,6 +1,6 @@
-import type { Service } from "@/lib/content";
+import type { ServiceIconName } from "@/lib/content";
 
-const PATHS: Record<Service["icon"], string> = {
+const PATHS: Record<ServiceIconName, string> = {
   design:
     "M4 16.5V19a1 1 0 0 0 1 1h2.5L18 9.5a2.5 2.5 0 0 0-3.5-3.5L4 16.5ZM13 7l4 4",
   code: "M8.5 8.5 5 12l3.5 3.5M15.5 8.5 19 12l-3.5 3.5M13.5 5.5l-3 13",
@@ -12,7 +12,7 @@ const PATHS: Record<Service["icon"], string> = {
     "M12 20a8 8 0 1 0-8-8v3.5A2.5 2.5 0 0 0 6.5 18H8M16 18h-.5a2.5 2.5 0 0 1-2.5-2.5V12",
 };
 
-export function ServiceIcon({ name }: { name: Service["icon"] }) {
+export function ServiceIcon({ name }: { name: ServiceIconName }) {
   return (
     <span className="border-neon-pink/20 from-neon-pink/15 to-neon-violet/15 text-neon-rose inline-flex h-12 w-12 items-center justify-center rounded-2xl border bg-gradient-to-br">
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden>

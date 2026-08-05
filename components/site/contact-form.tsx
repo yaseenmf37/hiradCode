@@ -4,14 +4,15 @@ import { AnimatePresence, motion } from "motion/react";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { submitContact, type ContactState } from "@/app/(site)/contact/actions";
+import { submitContact, type ContactState } from "@/app/[lang]/(site)/contact/actions";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
-import { BUDGET_RANGES, SUBJECT_OTHER, SUBJECTS } from "@/lib/types";
+import type { Dictionary } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n/config";
 
 const initial: ContactState = { status: "idle" };
 
-function SubmitButton() {
+function SubmitButton({ dict }: { dict: Dictionary["contactForm"] }) {
   const { pending } = useFormStatus();
 
   return (
@@ -19,18 +20,25 @@ function SubmitButton() {
       {pending ? (
         <>
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-          در حال ارسال…
+          {dict.submitting}
         </>
       ) : (
-        "ارسال پیام"
+        dict.submit
       )}
     </Button>
   );
 }
 
-export function ContactForm() {
+export function ContactForm({
+  locale,
+  dict,
+}: {
+  locale: Locale;
+  dict: Dictionary["contactForm"];
+}) {
   const [state, formAction] = useActionState(submitContact, initial);
-  const [subject, setSubject] = useState<string>(SUBJECTS[0]);
+  const [subject, setSubject] = useState<string>(dict.subjects[0]);
+  const otherOption = dict.subjects[dict.subjects.length - 1];
 
   if (state.status === "success") {
     return (
@@ -42,7 +50,7 @@ export function ContactForm() {
         <span className="from-neon-pink to-neon-violet mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br text-2xl text-white">
           ✓
         </span>
-        <h3 className="mt-6 text-2xl font-extrabold tracking-tight">پیام ارسال شد</h3>
+        <h3 className="mt-6 text-2xl font-extrabold tracking-tight">{dict.successTitle}</h3>
         <p className="text-fog-400 mx-auto mt-3 max-w-sm text-sm leading-8">
           {state.message}
         </p>
@@ -51,10 +59,8 @@ export function ContactForm() {
   }
 
   return (
-    // noValidate: our own validation reports every problem at once, inline and
-    // in Persian. The browser's native bubbles would pre-empt it one field at a
-    // time, in the browser's locale, anchored LTR.
     <form action={formAction} noValidate className="glass rounded-[2rem] p-8 sm:p-10">
+      <input type="hidden" name="locale" value={locale} />
       {/* Honeypot — visually gone, still fillable by bots */}
       <input
         type="text"
@@ -79,40 +85,40 @@ export function ContactForm() {
       </AnimatePresence>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="نام و نام خانوادگی" htmlFor="name" required error={state.errors?.name}>
-          <Input id="name" name="name" placeholder="مثلاً سارا مرادی" autoComplete="name" />
+        <Field label={dict.name} htmlFor="name" required error={state.errors?.name}>
+          <Input id="name" name="name" placeholder={dict.namePh} autoComplete="name" />
         </Field>
 
-        <Field label="ایمیل" htmlFor="email" required error={state.errors?.email}>
+        <Field label={dict.email} htmlFor="email" required error={state.errors?.email}>
           <Input
             id="email"
             name="email"
             type="email"
             dir="ltr"
-            placeholder="you@example.com"
+            placeholder={dict.emailPh}
             autoComplete="email"
           />
         </Field>
 
-        <Field label="شماره تماس" htmlFor="phone" hint="اختیاری">
+        <Field label={dict.phone} htmlFor="phone" hint={dict.phoneHint}>
           <Input
             id="phone"
             name="phone"
             type="tel"
             dir="ltr"
-            placeholder="0912 345 6789"
+            placeholder={dict.phonePh}
             autoComplete="tel"
           />
         </Field>
 
-        <Field label="موضوع" htmlFor="subject">
+        <Field label={dict.subject} htmlFor="subject">
           <Select
             id="subject"
             name="subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           >
-            {SUBJECTS.map((option) => (
+            {dict.subjects.map((option) => (
               <option key={option} value={option} className="bg-ink-800">
                 {option}
               </option>
@@ -121,7 +127,7 @@ export function ContactForm() {
         </Field>
 
         <AnimatePresence initial={false}>
-          {subject === SUBJECT_OTHER && (
+          {subject === otherOption && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -130,26 +136,26 @@ export function ContactForm() {
               className="sm:col-span-2"
             >
               <Field
-                label="موضوع خودتان را بنویسید"
+                label={dict.subjectOther}
                 htmlFor="subjectOther"
-                hint="اختیاری — اگر خالی بماند «سایر» ثبت می‌شود"
+                hint={dict.subjectOtherHint}
               >
                 <Input
                   id="subjectOther"
                   name="subjectOther"
-                  placeholder="مثلاً مشاوره فنی یا بازطراحی پنل داخلی"
+                  placeholder={dict.subjectOtherPh}
                 />
               </Field>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <Field label="بودجه تقریبی" htmlFor="budget" className="sm:col-span-2">
+        <Field label={dict.budget} htmlFor="budget" className="sm:col-span-2">
           <Select id="budget" name="budget" defaultValue="">
             <option value="" className="bg-ink-800">
-              ترجیح می‌دهم نگویم
+              {dict.budgetNone}
             </option>
-            {BUDGET_RANGES.map((range) => (
+            {dict.budgets.map((range) => (
               <option key={range} value={range} className="bg-ink-800">
                 {range}
               </option>
@@ -158,26 +164,19 @@ export function ContactForm() {
         </Field>
 
         <Field
-          label="درباره پروژه بگویید"
+          label={dict.body}
           htmlFor="body"
           required
           error={state.errors?.body}
           className="sm:col-span-2"
         >
-          <Textarea
-            id="body"
-            name="body"
-            rows={6}
-            placeholder="چه چیزی می‌خواهید بسازید؟ چه مشکلی را باید حل کند؟ هر جزئیاتی که فکر می‌کنید کمک می‌کند."
-          />
+          <Textarea id="body" name="body" rows={6} placeholder={dict.bodyPh} />
         </Field>
       </div>
 
       <div className="mt-8 flex flex-wrap items-center gap-4">
-        <SubmitButton />
-        <p className="text-fog-600 text-xs">
-          معمولاً کمتر از ۲۴ ساعت جواب می‌دهیم.
-        </p>
+        <SubmitButton dict={dict} />
+        <p className="text-fog-600 text-xs">{dict.replyNote}</p>
       </div>
     </form>
   );

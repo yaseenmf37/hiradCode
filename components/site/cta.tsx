@@ -1,8 +1,10 @@
 import { ButtonLink } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
+import type { Dictionary } from "@/lib/i18n";
+import { type Locale, localePath } from "@/lib/i18n/config";
 import { SITE } from "@/lib/site-config";
 
-export function CTA() {
+export function CTA({ locale, dict }: { locale: Locale; dict: Dictionary["cta"] }) {
   return (
     <section className="mx-auto max-w-6xl px-6 py-24">
       <Reveal>
@@ -12,22 +14,21 @@ export function CTA() {
 
           <div className="relative">
             <h2 className="text-3xl leading-tight font-extrabold tracking-tight text-balance sm:text-5xl">
-              پروژه‌ای در سر دارید؟
+              {dict.titleTop}
               <br />
-              <span className="text-gradient">بیایید بسازیمش.</span>
+              <span className="text-gradient">{dict.titleBottom}</span>
             </h2>
 
             <p className="text-fog-400 mx-auto mt-5 max-w-lg text-base leading-8 text-pretty">
-              یک پیام بفرستید و در کمتر از ۲۴ ساعت جواب می‌گیرید. جلسه اول رایگان
-              است و هیچ تعهدی هم ندارید.
+              {dict.description}
             </p>
 
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <ButtonLink href="/contact" size="lg">
-                شروع گفتگو
+              <ButtonLink href={localePath(locale, "/contact")} size="lg">
+                {dict.start}
               </ButtonLink>
-              <ButtonLink href="/works" variant="outline" size="lg">
-                دیدن نمونه‌کارها
+              <ButtonLink href={localePath(locale, "/works")} variant="outline" size="lg">
+                {dict.works}
               </ButtonLink>
             </div>
 

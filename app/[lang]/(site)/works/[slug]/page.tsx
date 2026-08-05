@@ -7,10 +7,24 @@ import { ProjectCard } from "@/components/site/project-card";
 import { Eyebrow } from "@/components/site/section-heading";
 import { ButtonLink } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
+import { getDictionary } from "@/lib/i18n";
+import {
+  buildAlternates,
+  DEFAULT_LOCALE,
+  isLocale,
+  LOCALE_META,
+  localePath,
+} from "@/lib/i18n/config";
 import { getProjectBySlug, getProjects, getRelatedProjects } from "@/lib/projects";
-import { decodeParam, hexToRgbChannels, prettyUrl, toFa } from "@/lib/utils";
+import {
+  decodeParam,
+  fmtNum,
+  hexToRgbChannels,
+  localizeProject,
+  prettyUrl,
+} from "@/lib/utils";
 
-type Params = { params: Promise<{ slug: string }> };
+type Params = { params: Promise<{ lang: string; slug: string }> };
 
 export async function generateStaticParams() {
   const projects = await getProjects();
@@ -18,36 +32,48 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { slug } = await params;
+  const { lang, slug } = await params;
+  const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
   const project = await getProjectBySlug(decodeParam(slug));
+  const dict = getDictionary(locale);
 
-  if (!project) return { title: "پروژه پیدا نشد" };
+  if (!project) return { title: dict.projectPage.notFoundTitle };
+
+  const t = localizeProject(project, locale);
+  const path = `/works/${project.slug}`;
 
   return {
-    title: project.title,
-    description: project.subtitle,
+    title: t.title,
+    description: t.subtitle,
+    alternates: buildAlternates(locale, path),
     openGraph: {
-      title: project.title,
-      description: project.subtitle,
+      title: t.title,
+      description: t.subtitle,
+      locale: LOCALE_META[locale].ogLocale,
+      url: localePath(locale, path),
       images: project.coverImage ? [{ url: project.coverImage }] : undefined,
     },
   };
 }
 
 export default async function ProjectPage({ params }: Params) {
-  const { slug } = await params;
-  const project = await getProjectBySlug(decodeParam(slug));
+  const { lang, slug } = await params;
+  const locale = isLocale(lang) ? lang : DEFAULT_LOCALE;
+  const dict = getDictionary(locale);
+  const pp = dict.projectPage;
 
+  const project = await getProjectBySlug(decodeParam(slug));
   if (!project) notFound();
 
+  const t = localizeProject(project, locale);
   const related = await getRelatedProjects(project);
   const accent = hexToRgbChannels(project.accent);
 
   const meta = [
-    { label: "کارفرما", value: project.client },
-    { label: "سال", value: project.year ? toFa(project.year) : null },
-    { label: "مدت", value: project.duration },
-    { label: "نقش ما", value: project.role },
+    { label: pp.metaClient, value: project.client },
+    { label: pp.metaYear, value: project.year ? fmtNum(locale, project.year) : null },
+    { label: pp.metaDuration, value: project.duration },
+    { label: pp.metaRole, value: project.role },
   ].filter((item) => item.value);
 
   return (
@@ -65,10 +91,10 @@ export default async function ProjectPage({ params }: Params) {
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <Link
-              href="/works"
+              href={localePath(locale, "/works")}
               className="text-fog-500 hover:text-neon-rose mb-8 inline-flex items-center gap-2 text-sm font-bold transition-colors"
             >
-              <span aria-hidden>→</span> بازگشت به نمونه‌کارها
+              <span aria-hidden>→</span> {pp.back}
             </Link>
           </Reveal>
 
@@ -78,13 +104,13 @@ export default async function ProjectPage({ params }: Params) {
 
           <Reveal delay={0.12}>
             <h1 className="mt-6 text-4xl leading-[1.15] font-extrabold tracking-tight text-balance sm:text-6xl">
-              {project.title}
+              {t.title}
             </h1>
           </Reveal>
 
           <Reveal delay={0.18}>
             <p className="text-fog-400 mt-5 max-w-2xl text-lg leading-8 text-pretty">
-              {project.subtitle}
+              {t.subtitle}
             </p>
           </Reveal>
 
@@ -97,7 +123,7 @@ export default async function ProjectPage({ params }: Params) {
                   rel="noreferrer noopener"
                   size="lg"
                 >
-                  مشاهده سایت زنده
+                  {pp.live}
                   <span dir="ltr" className="text-xs font-normal opacity-70">
                     {prettyUrl(project.liveUrl)}
                   </span>
@@ -116,7 +142,7 @@ export default async function ProjectPage({ params }: Params) {
               <div className="relative h-full w-full overflow-hidden rounded-2xl">
                 <Image
                   src={project.coverImage}
-                  alt={project.title}
+                  alt={t.title}
                   fill
                   priority
                   sizes="(max-width: 1200px) 100vw, 1200px"
@@ -133,17 +159,15 @@ export default async function ProjectPage({ params }: Params) {
         <div className="grid gap-12 lg:grid-cols-[1fr_280px]">
           <Reveal>
             <div>
-              <h2 className="text-2xl font-extrabold tracking-tight">
-                درباره این پروژه
-              </h2>
+              <h2 className="text-2xl font-extrabold tracking-tight">{pp.about}</h2>
               <p className="text-fog-300 mt-5 text-base leading-9 whitespace-pre-line">
-                {project.description}
+                {t.description}
               </p>
 
               {project.services.length > 0 && (
                 <div className="mt-10">
                   <h3 className="text-fog-500 text-xs font-bold tracking-wider">
-                    خدمات ارائه‌شده
+                    {pp.servicesProvided}
                   </h3>
                   <ul className="mt-4 flex flex-wrap gap-2">
                     {project.services.map((service) => (
@@ -176,7 +200,7 @@ export default async function ProjectPage({ params }: Params) {
 
                 {project.tags.length > 0 && (
                   <div className="mt-6 border-t border-white/5 pt-5">
-                    <dt className="text-fog-600 mb-3 text-xs font-bold">تکنولوژی</dt>
+                    <dt className="text-fog-600 mb-3 text-xs font-bold">{pp.tech}</dt>
                     <div className="flex flex-wrap gap-1.5">
                       {project.tags.map((tag) => (
                         <span
@@ -208,7 +232,7 @@ export default async function ProjectPage({ params }: Params) {
               style={{ background: `rgb(${accent} / 0.04)` }}
             >
               <h2 className="text-fog-500 mb-8 text-xs font-bold tracking-wider">
-                نتیجه
+                {pp.result}
               </h2>
               <dl className="grid gap-8 sm:grid-cols-3">
                 {project.results.map((result) => (
@@ -238,7 +262,7 @@ export default async function ProjectPage({ params }: Params) {
                   <div className="relative h-full w-full overflow-hidden rounded-2xl">
                     <Image
                       src={src}
-                      alt={`${project.title} — تصویر ${toFa(i + 1)}`}
+                      alt={`${t.title} — ${pp.imageWord} ${fmtNum(locale, i + 1)}`}
                       fill
                       sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover transition-transform duration-700 hover:scale-105"
@@ -256,14 +280,15 @@ export default async function ProjectPage({ params }: Params) {
         <section className="mx-auto max-w-6xl border-t border-white/5 px-6 py-20">
           <Reveal>
             <h2 className="text-2xl font-extrabold tracking-tight">
-              پروژه‌های <span className="text-gradient">بعدی</span>
+              {pp.nextLead}
+              <span className="text-gradient">{pp.nextHighlight}</span>
             </h2>
           </Reveal>
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             {related.map((item, i) => (
               <Reveal key={item.id} delay={i * 0.08}>
-                <ProjectCard project={item} />
+                <ProjectCard project={item} locale={locale} dict={dict.gallery} />
               </Reveal>
             ))}
           </div>

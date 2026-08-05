@@ -12,6 +12,7 @@ import { cn, toFa } from "@/lib/utils";
 const NAV = [
   { href: "/admin", label: "داشبورد", icon: "M4 13h7V4H4v9Zm9 7h7v-9h-7v9ZM4 20h7v-5H4v5Zm9-11h7V4h-7v5Z" },
   { href: "/admin/projects", label: "نمونه‌کارها", icon: "M4 7h16M4 12h16M4 17h10" },
+  { href: "/admin/blog", label: "بلاگ", icon: "M6 4h9l5 5v11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1ZM14 4v5h5M8 13h8M8 17h5" },
   { href: "/admin/messages", label: "پیام‌ها", icon: "M4 6h16v12H4zM4 7l8 6 8-6" },
 ];
 

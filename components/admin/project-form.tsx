@@ -8,7 +8,7 @@ import { saveProjectAction, type ProjectFormState } from "@/app/admin/actions";
 import { GalleryInput, ImageInput } from "@/components/admin/image-input";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
-import { ACCENT_PRESETS, CATEGORIES, type Project } from "@/lib/types";
+import { ACCENT_PRESETS, CATEGORIES, CATEGORY_OTHER, type Project } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const initial: ProjectFormState = { status: "idle" };
@@ -63,6 +63,17 @@ export function ProjectForm({ project }: { project?: Project }) {
   const [accent, setAccent] = useState(project?.accent ?? ACCENT_PRESETS[0].value);
   const [results, setResults] = useState(
     project?.results.length ? project.results : [{ label: "", value: "" }],
+  );
+
+  // A saved category outside the preset list is a custom one — reopen it as
+  // "سایر" with the value pre-filled in the free-text field.
+  const initialCategory = project?.category ?? "";
+  const isKnownCategory = (CATEGORIES as readonly string[]).includes(initialCategory);
+  const [category, setCategory] = useState(
+    initialCategory && !isKnownCategory ? CATEGORY_OTHER : initialCategory,
+  );
+  const [categoryOther, setCategoryOther] = useState(
+    initialCategory && !isKnownCategory ? initialCategory : "",
   );
 
   const setResult = (i: number, key: "label" | "value", next: string) =>
@@ -134,17 +145,44 @@ export function ProjectForm({ project }: { project?: Project }) {
             required
             error={state.errors?.category}
           >
-            <Select id="category" name="category" defaultValue={project?.category ?? ""}>
+            <Select
+              id="category"
+              name="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
               <option value="" disabled className="bg-ink-800">
                 انتخاب کنید…
               </option>
-              {CATEGORIES.map((category) => (
-                <option key={category} value={category} className="bg-ink-800">
-                  {category}
+              {CATEGORIES.map((option) => (
+                <option key={option} value={option} className="bg-ink-800">
+                  {option}
                 </option>
               ))}
+              <option value={CATEGORY_OTHER} className="bg-ink-800">
+                {CATEGORY_OTHER} (وارد کردن دستی)
+              </option>
             </Select>
           </Field>
+
+          {category === CATEGORY_OTHER && (
+            <Field
+              label="دسته‌بندی دلخواه"
+              htmlFor="categoryOther"
+              required
+              error={state.errors?.categoryOther}
+              className="sm:col-span-2"
+              hint="نام دسته‌بندی‌ای که در گزینه‌های آماده نیست را بنویسید"
+            >
+              <Input
+                id="categoryOther"
+                name="categoryOther"
+                value={categoryOther}
+                onChange={(e) => setCategoryOther(e.target.value)}
+                placeholder="مثلاً وب‌اپلیکیشن مالی"
+              />
+            </Field>
+          )}
 
           <Field label="لینک سایت زنده" htmlFor="liveUrl">
             <Input
@@ -170,6 +208,48 @@ export function ProjectForm({ project }: { project?: Project }) {
               rows={7}
               defaultValue={project?.description}
               placeholder="کارفرما با این مشکل سراغ ما آمد…"
+            />
+          </Field>
+        </div>
+      </Section>
+
+      <Section
+        title="محتوای انگلیسی (اختیاری)"
+        hint="برای نسخه انگلیسی سایت (/en). خالی بماند، همان متن فارسی نمایش داده می‌شود."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="عنوان (انگلیسی)" htmlFor="titleEn">
+            <Input
+              id="titleEn"
+              name="titleEn"
+              dir="ltr"
+              defaultValue={project?.titleEn ?? ""}
+              placeholder="e.g. Astra Store"
+            />
+          </Field>
+
+          <Field label="توضیح کوتاه (انگلیسی)" htmlFor="subtitleEn">
+            <Input
+              id="subtitleEn"
+              name="subtitleEn"
+              dir="ltr"
+              defaultValue={project?.subtitleEn ?? ""}
+              placeholder="An online store focused entirely on conversion"
+            />
+          </Field>
+
+          <Field
+            label="توضیح کامل (انگلیسی)"
+            htmlFor="descriptionEn"
+            className="sm:col-span-2"
+          >
+            <Textarea
+              id="descriptionEn"
+              name="descriptionEn"
+              dir="ltr"
+              rows={7}
+              defaultValue={project?.descriptionEn ?? ""}
+              placeholder="The client came to us with this problem…"
             />
           </Field>
         </div>

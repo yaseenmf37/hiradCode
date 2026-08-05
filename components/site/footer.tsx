@@ -1,66 +1,74 @@
 import Link from "next/link";
 
 import { Logo } from "@/components/site/logo";
+import { SocialIcon } from "@/components/site/social-icon";
+import type { Dictionary } from "@/lib/i18n";
+import { type Locale, localePath } from "@/lib/i18n/config";
 import { SITE } from "@/lib/site-config";
 import { toFa } from "@/lib/utils";
 
-const COLUMNS = [
-  {
-    title: "صفحات",
-    links: [
-      { href: "/", label: "خانه" },
-      { href: "/works", label: "نمونه‌کارها" },
-      { href: "/services", label: "خدمات" },
-      { href: "/about", label: "درباره ما" },
-      { href: "/contact", label: "تماس" },
-    ],
-  },
-  {
-    title: "خدمات",
-    links: [
-      { href: "/services#design", label: "طراحی رابط کاربری" },
-      { href: "/services#development", label: "توسعه وب" },
-      { href: "/services#branding", label: "هویت بصری" },
-      { href: "/services#performance", label: "بهینه‌سازی سرعت" },
-    ],
-  },
-];
+const PAGE_KEYS = ["home", "works", "services", "blog", "about", "faq", "contact"] as const;
+const SERVICE_ANCHORS = ["#design", "#development", "#branding", "#performance"];
 
-export function Footer() {
-  const year = toFa(new Date().getFullYear() - 621); // Gregorian → rough Jamali
+export function Footer({ locale, dict }: { locale: Locale; dict: Dictionary }) {
+  const gregorian = new Date().getFullYear();
+  const year = locale === "en" ? String(gregorian) : toFa(gregorian - 621); // Gregorian → rough Jamali
+  const siteName = locale === "en" ? SITE.nameEn : SITE.name;
 
   return (
     <footer className="relative mt-24 border-t border-white/5">
       <div className="mx-auto max-w-6xl px-6 py-16">
         <div className="grid gap-12 md:grid-cols-[1.6fr_1fr_1fr_1.2fr]">
           <div>
-            <Logo />
+            <Logo locale={locale} />
             <p className="text-fog-500 mt-5 max-w-xs text-sm leading-7">
-              استودیو طراحی و توسعه وب. از ایده تا اجرا، وب‌سایت‌هایی می‌سازیم که
-              کار می‌کنند و دیده می‌شوند.
+              {dict.footer.blurb}
             </p>
           </div>
 
-          {COLUMNS.map((column) => (
-            <div key={column.title}>
-              <h3 className="text-fog-100 mb-4 text-sm font-bold">{column.title}</h3>
-              <ul className="space-y-3">
-                {column.links.map((link) => (
-                  <li key={link.href + link.label}>
+          <div>
+            <h3 className="text-fog-100 mb-4 text-sm font-bold">
+              {dict.footer.pagesTitle}
+            </h3>
+            <ul className="space-y-3">
+              {PAGE_KEYS.map((key) => {
+                const href = localePath(locale, key === "home" ? "/" : `/${key}`);
+                return (
+                  <li key={key}>
                     <Link
-                      href={link.href}
+                      href={href}
                       className="text-fog-500 hover:text-neon-rose text-sm transition-colors"
                     >
-                      {link.label}
+                      {dict.nav[key]}
                     </Link>
                   </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+                );
+              })}
+            </ul>
+          </div>
 
           <div>
-            <h3 className="text-fog-100 mb-4 text-sm font-bold">تماس</h3>
+            <h3 className="text-fog-100 mb-4 text-sm font-bold">
+              {dict.footer.servicesTitle}
+            </h3>
+            <ul className="space-y-3">
+              {dict.footer.servicesLinks.map((label, i) => (
+                <li key={label}>
+                  <Link
+                    href={localePath(locale, `/services${SERVICE_ANCHORS[i]}`)}
+                    className="text-fog-500 hover:text-neon-rose text-sm transition-colors"
+                  >
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-fog-100 mb-4 text-sm font-bold">
+              {dict.footer.contactTitle}
+            </h3>
             <ul className="space-y-3 text-sm">
               <li>
                 <a
@@ -90,9 +98,10 @@ export function Footer() {
                   target="_blank"
                   rel="noreferrer noopener"
                   aria-label={social.label}
+                  title={social.label}
                   className="text-fog-400 hover:border-neon-pink/50 hover:text-fog-100 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 transition-all hover:bg-white/10"
                 >
-                  <span className="text-xs font-bold">{social.short}</span>
+                  <SocialIcon name={social.icon} />
                 </a>
               ))}
             </div>
@@ -101,9 +110,9 @@ export function Footer() {
 
         <div className="text-fog-600 mt-12 flex flex-col items-center justify-between gap-3 border-t border-white/5 pt-6 text-xs sm:flex-row">
           <p>
-            © {year} هیراد کد — تمام حقوق محفوظ است.
+            © {year} {siteName} — {dict.footer.rights}
           </p>
-          <p>ساخته شده با Next.js و کمی وسواس.</p>
+          <p>{dict.footer.madeWith}</p>
         </div>
       </div>
     </footer>
