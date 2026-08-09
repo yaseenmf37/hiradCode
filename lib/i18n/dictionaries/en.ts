@@ -76,7 +76,7 @@ export const en: Dictionary = {
   },
 
   hero: {
-    eyebrow: "Booking projects for 2025",
+    eyebrow: "Ready for New Projects",
     titleTop: "Web design and development,",
     titleBottom: "done the way it should be.",
     description:
@@ -87,9 +87,9 @@ export const en: Dictionary = {
 
   heroVisual: {
     lighthouse: "Lighthouse score",
-    lighthouseValue: "98",
+    lighthouseValue: "99",
     delivery: "Delivery",
-    deliveryValue: "6 weeks",
+    deliveryValue: "4 weeks",
   },
 
   featured: {
@@ -158,9 +158,9 @@ export const en: Dictionary = {
     description:
       "We're not an agency. We're a small, focused team that would rather deliver five projects brilliantly than fifty at average.",
     story: [
-      "Hirad Code started from a simple frustration: we kept seeing websites that were either pretty and slow, or fast and ugly. Almost none were both.",
-      "So we built a team that takes both sides seriously — designers who know how their design runs as code, and developers who notice the difference between two pixels. The result is that you no longer have to choose between looking good and performing well.",
-      "Since then we've delivered a wide range of projects — from early-stage startup landings to internal company platforms. Each was a different problem, and each taught us something.",
+      "HiradCode started with a simple question: why should a website have to choose between beauty, speed, and performance? We decided to remove that choice.",
+      "We built a team that sees design and development as one process — designers who understand how their decisions are brought to life in code, and developers who care about the smallest details of the user experience. The result is websites that look great, perform fast, and are built to work.",
+      "From corporate and e-commerce websites to landing pages and custom systems, every project has been a new problem to solve. We start by understanding the challenge, then build a solution designed to create real results for your business.",
     ],
     valuesEyebrow: "Our principles",
     valuesLead: "Four things we ",

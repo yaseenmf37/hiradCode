@@ -92,6 +92,7 @@ export default async function AboutPage({
       </section>
 
       {/* ── Team ─────────────────────────────────────── */}
+      {/* 
       <section className="mx-auto max-w-5xl px-6 pb-24">
         <SectionHeading
           eyebrow={about.teamEyebrow}
@@ -118,6 +119,7 @@ export default async function AboutPage({
           ))}
         </RevealGroup>
       </section>
+      */}
 
       <CTA locale={locale} dict={dict.cta} />
     </>
